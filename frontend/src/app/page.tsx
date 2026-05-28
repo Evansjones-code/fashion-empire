@@ -26,10 +26,13 @@ export default function StorefrontHomePage() {
   const [dbError, setDbError] = useState(false);
   const { setCartOpen, cartItems } = useCart();
 
-  // STREAM LIVE REQUISITIONS FROM THE SQLITE ENGINE ON PORT 8080
+  // DYNAMIC BACKEND TARGET CONFIGURATION: Resolves live domain or local environment variables safely
+  const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+
+  // STREAM LIVE REQUISITIONS FROM THE SQLITE ENGINE OR RENDER SERVER
   const fetchActiveCatalog = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/products');
+      const response = await fetch(`${BACKEND_API_URL}/api/products`);
       const data = await response.json();
       setProducts(data || []);
       setDbError(false);
@@ -80,15 +83,15 @@ export default function StorefrontHomePage() {
                 <button 
                   onClick={async () => {
                     try {
-                      const res = await fetch('http://localhost:8080/api/products/seed', { method: 'POST' });
+                      const res = await fetch(`${BACKEND_API_URL}/api/products/seed`, { method: 'POST' });
                       if (res.ok) {
                         alert("🌱 Matrix Seed Injection Successful! 12 garments loaded.");
-                        fetchActiveCatalog(); // Reload database items locally instantly
+                        fetchActiveCatalog(); // Reload database items safely
                       } else {
                         alert("Seed node entry request rejected.");
                       }
                     } catch (err) {
-                      alert("Database node offline. Ensure node test.js is active.");
+                      alert(`Database node offline. Ensure backend instance is running at: ${BACKEND_API_URL}`);
                     }
                   }}
                   className='text-[9px] font-black uppercase tracking-wider text-emerald-600 hover:text-emerald-800 transition cursor-pointer bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded'
@@ -146,7 +149,7 @@ export default function StorefrontHomePage() {
             {/* Offline Error Feedback Block */}
             {dbError && (
               <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-4 mb-6 text-xs font-mono">
-                ⚠️ [DATABASE TERMINAL OFFLINE] Check if your Node server is running on port 8080.
+                ⚠️ [DATABASE TERMINAL OFFLINE] Check if your server configuration instance is live at: {BACKEND_API_URL}
               </div>
             )}
 

@@ -12,6 +12,9 @@ export default function CatalogInjectionPage() {
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [isInjecting, setIsInjecting] = useState(false);
 
+  // DYNAMIC BACKEND TARGET CONFIGURATION
+  const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+
   const handleSizeToggle = (size: string) => {
     setSelectedSizes(prev => 
       prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]
@@ -34,20 +37,20 @@ export default function CatalogInjectionPage() {
     };
 
     try {
-      const response = await fetch('http://localhost:8080/api/products', {
+      const response = await fetch(`${BACKEND_API_URL}/api/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payloadNode)
       });
       const data = await response.json();
       if (data.success) {
-        alert("🎉 Garment Design Node successfully injected into active SQLite table partition!");
+        alert("🎉 Garment Design Node successfully injected into active database partition!");
         setTitle(''); setPrice(''); setCategory(''); setImageUrl(''); setDescription(''); setSelectedSizes([]);
       } else {
         alert("Injection matrix rejected data payload.");
       }
     } catch (err) {
-      alert("Network fault tracking to backend port 8080.");
+      alert(`Network fault tracking to backend instance at: ${BACKEND_API_URL}`);
     } finally {
       setIsInjecting(false);
     }

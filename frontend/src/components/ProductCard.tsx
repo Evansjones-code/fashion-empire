@@ -17,7 +17,9 @@ export default function ProductCard({ p }: { p: Product }) {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // SAFE STRUCTURAL GRAPHIC ENGINE - ELIMINATES LITERAL PARSING FAULTS
+  // DYNAMIC BACKEND TARGET CONFIGURATION
+  const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+
   const getProductImage = (product: Product) => {
     const titleLower = product.title?.toLowerCase().trim() || '';
     const catLower = product.category?.toLowerCase().trim() || '';
@@ -27,7 +29,6 @@ export default function ProductCard({ p }: { p: Product }) {
     let stopEnd = "%230f1210";
     let fontColor = "%23707d75";
 
-    // Dynamic color matching rules matrix
     if (titleLower.includes('linen')) {
       textNode = "HEAVY LINEN"; stopStart = "%23e4dcd3"; stopEnd = "%23bcae9f"; fontColor = "%23544a40";
     } else if (titleLower.includes('cuban')) {
@@ -66,15 +67,15 @@ export default function ProductCard({ p }: { p: Product }) {
       return product.image_url;
     }
 
-    // Standard concatenate execution completely fixes the unterminated literal bugs
     return "data:image/svg+xml;utf8,<svg xmlns='http://w3.org' viewBox='0 0 100 130'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='" + stopStart + "'/><stop offset='100%' stop-color='" + stopEnd + "'/></linearGradient></defs><rect width='100' height='130' fill='url(%23g)'/><text x='50%' y='55%' font-family='sans-serif' font-size='5.5' font-weight='black' fill='" + fontColor + "' text-anchor='middle' letter-spacing='1'>" + textNode + "</text></svg>";
   };
+
   const handlePayment = async () => {
     if (!phoneNumber) return alert("Please enter your M-Pesa phone number!");
     setIsProcessing(true);
 
     try {
-      const response = await fetch('http://localhost:8080/api/checkout/mpesa', {
+      const response = await fetch(`${BACKEND_API_URL}/api/checkout/mpesa`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -90,7 +91,7 @@ export default function ProductCard({ p }: { p: Product }) {
         alert("Payment process failed.");
       }
     } catch (error) {
-      alert("Network fault tracking to backend port 8080.");
+      alert(`Network fault tracking to backend instance at: ${BACKEND_API_URL}`);
     } finally {
       setIsProcessing(false);
     }

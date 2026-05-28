@@ -18,9 +18,12 @@ export default function AdminOrdersDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
+  // DYNAMIC BACKEND TARGET CONFIGURATION
+  const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+
   const fetchOrders = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/orders');
+      const response = await fetch(`${BACKEND_API_URL}/api/orders`);
       const data = await response.json();
       setOrders(data || []);
       setIsLoading(false);
