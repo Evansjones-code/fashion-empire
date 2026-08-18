@@ -10,6 +10,9 @@ export default function CartDrawer() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isPaying, setIsPaying] = useState(false);
 
+  // HARDCODED LIVE RENDER ENDPOINT
+  const BACKEND_API_URL = 'https://fashion-empire-3.onrender.com';
+
   if (!isCartOpen) return null;
 
   const handleMpesaCheckout = async () => {
@@ -18,7 +21,7 @@ export default function CartDrawer() {
     setIsPaying(true);
 
     try {
-      const res = await fetch('http://localhost:8080/api/checkout/mpesa', {
+      const res = await fetch(`${BACKEND_API_URL}/api/checkout/mpesa`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
