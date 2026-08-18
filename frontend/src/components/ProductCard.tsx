@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useCart } from '@/context/CartContext';
+import { Trash2, ShoppingBag } from 'lucide-react';
 
 interface Product { 
   id: string; 
@@ -13,12 +15,18 @@ interface Product {
   sizes: string[]; 
 }
 
-export default function ProductCard({ p }: { p: Product }) {
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
+interface ProductCardProps {
+  p: Product;
+  onDelete?: () => void;
+}
 
-  // DYNAMIC BACKEND TARGET CONFIGURATION
-  const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+export default function ProductCard({ p, onDelete }: ProductCardProps) {
+  const { addToCart } = useCart();
+  const [selectedSize, setSelectedSize] = useState<string>(p.sizes?.[0] || 'M');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // HARDCODED LIVE RENDER ENDPOINT
+  const BACKEND_API_URL = 'https://fashion-empire-3.onrender.com';
 
   const getProductImage = (product: Product) => {
     const titleLower = product.title?.toLowerCase().trim() || '';
@@ -67,90 +75,113 @@ export default function ProductCard({ p }: { p: Product }) {
       return product.image_url;
     }
 
-    return "data:image/svg+xml;utf8,<svg xmlns='http://w3.org' viewBox='0 0 100 130'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='" + stopStart + "'/><stop offset='100%' stop-color='" + stopEnd + "'/></linearGradient></defs><rect width='100' height='130' fill='url(%23g)'/><text x='50%' y='55%' font-family='sans-serif' font-size='5.5' font-weight='black' fill='" + fontColor + "' text-anchor='middle' letter-spacing='1'>" + textNode + "</text></svg>";
+    return "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 130'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='" + stopStart + "'/><stop offset='100%' stop-color='" + stopEnd + "'/></linearGradient></defs><rect width='100' height='130' fill='url(%23g)'/><text x='50%' y='55%' font-family='sans-serif' font-size='5.5' font-weight='black' fill='" + fontColor + "' text-anchor='middle' letter-spacing='1'>" + textNode + "</text></svg>";
   };
 
-  const handlePayment = async () => {
-    if (!phoneNumber) return alert("Please enter your M-Pesa phone number!");
-    setIsProcessing(true);
+  const handleAddToCart = () => {
+    addToCart({
+      id: `${p.id}-${selectedSize}`,
+      title: p.title,
+      price: p.base_price,
+      imageUrl: getProductImage(p),
+      size: selectedSize,
+    });
+  };
+
+  const handleDelete = async () => {
+    if (!confirm(`Are you sure you want to remove "${p.title}" from the catalog?`)) return;
+    setIsDeleting(true);
 
     try {
-      const response = await fetch(`${BACKEND_API_URL}/api/checkout/mpesa`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          phone: phoneNumber, 
-          amount: p.base_price,
-          items: [{ title: p.title, size: 'M', quantity: 1 }]
-        })
+      const res = await fetch(`${BACKEND_API_URL}/api/products/${p.id}`, {
+        method: 'DELETE',
       });
-      const data = await response.json();
-      if (data.success) {
-        alert("STK Push Sent! Enter your M-Pesa PIN on your phone to complete your order.");
+
+      if (res.ok) {
+        if (onDelete) onDelete();
       } else {
-        alert("Payment process failed.");
+        alert('Failed to delete product from matrix database.');
       }
-    } catch (error) {
-      alert(`Network fault tracking to backend instance at: ${BACKEND_API_URL}`);
+    } catch (err) {
+      console.error('Delete dispatch fault:', err);
+      alert('Network error communicating with Render backend.');
     } finally {
-      setIsProcessing(false);
+      setIsDeleting(false);
     }
   };
 
   return (
-    <div className="group bg-white overflow-hidden border border-neutral-200/60 shadow-xs rounded-3xl transition-all duration-300 hover:shadow-md transform hover:-translate-y-0.5 flex flex-col h-full justify-between">
+    <div className="group relative bg-white overflow-hidden border border-neutral-200/80 rounded-3xl transition-all duration-300 hover:shadow-xl hover:border-neutral-300 flex flex-col h-full justify-between p-4">
       <div>
-        <Link href={`/products/${p.slug}`} className="block relative aspect-[3/4] w-full bg-neutral-950 overflow-hidden cursor-pointer">
+        {/* Header Badges & Delete Action */}
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[9px] font-mono font-bold uppercase tracking-widest bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-md">
+            {p.category}
+          </span>
+          <button
+            onClick={handleDelete}
+            disabled={isDeleting}
+            title="Delete product from catalog"
+            className="text-neutral-300 hover:text-red-600 transition cursor-pointer p-1 rounded-lg hover:bg-red-50 disabled:opacity-40"
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
+
+        {/* Product Image */}
+        <Link href={`/products/${p.slug}`} className="block relative aspect-[3/4] w-full bg-neutral-950 overflow-hidden rounded-2xl cursor-pointer mb-4">
           <img 
             src={getProductImage(p)} 
             alt={p.title} 
-            className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.01]" 
+            className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105" 
           />
-          <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-xs text-neutral-900 text-[9px] tracking-widest uppercase font-black px-2 py-1 rounded border border-neutral-200/30 z-10">
-            {p.category}
-          </div>
         </Link>
 
-        <div className="p-5 space-y-2">
+        {/* Product Info & Price */}
+        <div className="space-y-1 mb-3">
           <Link href={`/products/${p.slug}`} className="block cursor-pointer">
-            <h2 className="text-sm font-black text-neutral-950 tracking-tight hover:text-neutral-700 transition-colors line-clamp-1">
+            <h2 className="text-xs font-black text-neutral-950 uppercase tracking-tight hover:text-neutral-700 transition-colors line-clamp-1">
               {p.title}
             </h2>
           </Link>
-          
-          <div className="flex flex-wrap gap-1">
-            {p.sizes?.map(s => (
-              <span key={s} className="font-mono text-[9px] text-neutral-500 font-bold px-1.5 py-0.5 bg-neutral-50 border border-neutral-200/40 rounded">
-                {s}
-              </span>
-            ))}
-          </div>
+          <p className="text-xs font-mono font-black text-neutral-900">
+            KSh {p.base_price?.toLocaleString()}
+          </p>
         </div>
+
+        {/* Size Selection */}
+        {p.sizes && p.sizes.length > 0 && (
+          <div className="mb-4">
+            <span className="text-[8px] font-mono uppercase tracking-widest text-neutral-400 block mb-1.5">
+              Select Size
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {p.sizes.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setSelectedSize(s)}
+                  className={`text-[9px] font-mono font-bold px-2 py-1 rounded-md border transition cursor-pointer ${
+                    selectedSize === s
+                      ? 'bg-neutral-950 text-white border-neutral-950'
+                      : 'bg-neutral-50 text-neutral-500 border-neutral-200 hover:border-neutral-400'
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="p-5 pt-0">
-        <div className="pt-2 border-t border-neutral-100 flex items-center justify-between">
-          <span className="text-[10px] font-bold uppercase text-neutral-400 group-hover:text-neutral-950 transition duration-300">View Details &rarr;</span>
-          <p className="text-neutral-950 font-mono text-sm font-black">KSh {p.base_price?.toLocaleString()}</p>
-        </div>
-        
-        <div className="mt-4 space-y-2">
-          <input 
-            type="text" 
-            placeholder="e.g., 0714445249" 
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            className="w-full bg-neutral-50 border border-neutral-200 text-xs px-4 py-2.5 rounded-xl font-sans focus:outline-none focus:border-black font-medium text-neutral-950"
-          />
-          <button 
-            onClick={handlePayment}
-            disabled={isProcessing}
-            className="w-full h-11 bg-emerald-600 text-white text-[10px] rounded-xl font-black tracking-widest uppercase transition-colors hover:bg-emerald-700 disabled:bg-neutral-200 cursor-pointer pt-0.5 shadow-sm"
-          >
-            {isProcessing ? 'Processing Matrix...' : 'Lipa na M-Pesa'}
-          </button>
-        </div>
-      </div>
+      {/* Add to Basket Action */}
+      <button 
+        onClick={handleAddToCart}
+        className="w-full bg-neutral-950 text-white text-[9px] font-black uppercase tracking-widest py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-neutral-800 transition cursor-pointer shadow-xs active:scale-[0.98] mt-2"
+      >
+        <ShoppingBag size={12} /> Add to Basket
+      </button>
     </div>
   );
 }

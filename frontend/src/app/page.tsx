@@ -6,6 +6,7 @@ import { useCart } from '@/context/CartContext';
 import CartDrawer from '@/components/CartDrawer';
 import Footer from '@/components/Footer';
 import ProductCard from '../components/ProductCard';
+import AddProductModal from '@/components/AddProductModal';
 
 interface Product { 
   id: string; 
@@ -24,6 +25,7 @@ export default function StorefrontHomePage() {
   const [category, setCategory] = useState('all');
   const [hasMounted, setHasMounted] = useState(false);
   const [dbError, setDbError] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { setCartOpen, cartItems } = useCart();
 
   // HARDCODED LIVE RENDER ENDPOINT (Bypasses local env variable caching)
@@ -75,11 +77,19 @@ export default function StorefrontHomePage() {
           {/* Header */}
           <header className='bg-white border-b border-neutral-200 px-8 py-5 sticky top-0 z-40 shadow-xs'>
             <div className='max-w-6xl mx-auto flex items-center justify-between'>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <Link href='/admin/orders' className='text-[9px] font-black uppercase tracking-wider text-neutral-400 hover:text-black transition duration-300'>
                   Control Panel
                 </Link>
                 
+                {/* TRIGGER ADD PRODUCT MODAL */}
+                <button 
+                  onClick={() => setIsAddModalOpen(true)}
+                  className='text-[9px] font-black uppercase tracking-wider text-neutral-900 hover:bg-neutral-200 transition cursor-pointer bg-neutral-100 border border-neutral-300 px-2 py-0.5 rounded'
+                >
+                  + Add Product
+                </button>
+
                 {/* INTERACTIVE BROWSER-TRIGGERED SEED BUTTON */}
                 <button 
                   onClick={async () => {
@@ -171,7 +181,15 @@ export default function StorefrontHomePage() {
           <Footer setCategory={setCategory} />
         </div>
       </main>
+      
       <CartDrawer />
+
+      {/* ADD PRODUCT INJECTION MODAL */}
+      <AddProductModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        onProductAdded={fetchActiveCatalog} 
+      />
     </div>
   );
 }
