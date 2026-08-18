@@ -26,11 +26,8 @@ export default function StorefrontHomePage() {
   const [dbError, setDbError] = useState(false);
   const { setCartOpen, cartItems } = useCart();
 
-  // DYNAMIC BACKEND TARGET CONFIGURATION: Safely resolves production Render domain or local env vars
-  const BACKEND_API_URL = 
-    process.env.NEXT_PUBLIC_BACKEND_URL || 
-    process.env.NEXT_PUBLIC_API_URL || 
-    'https://fashion-empire-3.onrender.com';
+  // HARDCODED LIVE RENDER ENDPOINT (Bypasses local env variable caching)
+  const BACKEND_API_URL = 'https://fashion-empire-3.onrender.com';
 
   // STREAM LIVE REQUISITIONS FROM THE SQLITE ENGINE OR RENDER SERVER
   const fetchActiveCatalog = async () => {
